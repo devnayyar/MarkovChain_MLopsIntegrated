@@ -253,15 +253,6 @@ Streamlit dashboard available at: **`http://localhost:8501`**
 - Automatic alpha tuning
 - Uncertainty quantification per prediction
 
-### Documentation
-
-- `PHASE_1_QUICK_START.md` - 30-minute getting started guide
-- `PHASE_1_IMPLEMENTATION_GUIDE.md` - Step-by-step implementation
-- `PHASE_1_ARCHITECTURE.md` - System design & data flow
-- `PHASE_1_EXECUTIVE_SUMMARY.md` - Business value & ROI
-- `PHASE_1_COMPLETE_INDEX.md` - Master navigation guide
-
-**See**: [Phase 1 Status Report](PHASE_1_STATUS_REPORT.md) for complete details.
 
 ---
 
