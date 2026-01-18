@@ -1,0 +1,291 @@
+# Data Schema Definitions for FRED Economic Indicators
+# These schemas validate data at each layer: Bronze → Silver → Gold
+
+---
+# ═══════════════════════════════════════════════════════════════
+# BRONZE LAYER (Raw, As-Downloaded from FRED)
+# ═══════════════════════════════════════════════════════════════
+
+bronze_schema:
+  datasets:
+    UNRATE:
+      column_name: "UNRATE"
+      description: "Unemployment Rate (monthly %)"
+      frequency: "monthly"
+      start_date: "1948-01-01"
+      value_type: "float"
+      nullable: false
+      expected_range: [0.0, 15.0]
+      
+    FEDFUNDS:
+      column_name: "FEDFUNDS"
+      description: "Federal Funds Effective Rate (monthly %)"
+      frequency: "monthly"
+      start_date: "1954-07-01"
+      value_type: "float"
+      nullable: false
+      expected_range: [0.0, 20.0]
+      
+    CPIAUCSL:
+      column_name: "CPIAUCSL"
+      description: "Consumer Price Index (1982-84=100)"
+      frequency: "monthly"
+      start_date: "1947-01-01"
+      value_type: "float"
+      nullable: false
+      expected_range: [20.0, 400.0]
+      
+    T10Y2Y:
+      column_name: "T10Y2Y"
+      description: "10Y-2Y Yield Spread (%)"
+      frequency: "daily"
+      start_date: "2021-01-14"
+      value_type: "float"
+      nullable: true  # ⚠️ Nullable - can have missing daily observations
+      expected_range: [-2.0, 3.0]
+      
+    STLFSI4:
+      column_name: "STLFSI4"
+      description: "St. Louis Fed Financial Stress Index"
+      frequency: "weekly"
+      start_date: "1993-12-31"
+      value_type: "float"
+      nullable: true  # ⚠️ Nullable - sparse observations
+      expected_range: [-2.0, 5.0]
+
+  common_rules:
+    - "observation_date: datetime, sorted ascending, unique"
+    - "value: float or nullable, non-negative for UNRATE/FEDFUNDS/CPI"
+    - "no duplicate dates per series"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# SILVER LAYER (Standardized, Frequency-Aligned)
+# ═══════════════════════════════════════════════════════════════
+
+silver_schema:
+  table_name: "macro_indicators_monthly"
+  frequency: "monthly"  # ⚠️ All series resampled/aggregated to monthly
+  
+  columns:
+    date:
+      dtype: "datetime64[ns]"
+      nullable: false
+      unique: true
+      sorted: true
+      
+    UNRATE:
+      dtype: "float64"
+      nullable: false
+      range: [0.0, 15.0]
+      description: "Unemployment Rate"
+      
+    FEDFUNDS:
+      dtype: "float64"
+      nullable: false
+      range: [0.0, 20.0]
+      description: "Federal Funds Rate"
+      
+    CPIAUCSL:
+      dtype: "float64"
+      nullable: false
+      range: [20.0, 400.0]
+      description: "CPI All Urban Consumers"
+      
+    T10Y2Y:
+      dtype: "float64"
+      nullable: false  # ⚠️ After resampling to monthly mean
+      range: [-2.0, 3.0]
+      description: "10Y-2Y Yield Spread (monthly mean)"
+      
+    STLFSI4:
+      dtype: "float64"
+      nullable: false  # ⚠️ After resampling to monthly mean
+      range: [-2.0, 5.0]
+      description: "Financial Stress Index (monthly mean)"
+      
+    CPI_YOY:
+      dtype: "float64"
+      nullable: false
+      range: [-5.0, 20.0]
+      description: "CPI Year-over-Year percentage change"
+      
+  rules:
+    - "No null values allowed in silver"
+    - "Date range: common overlap of all series"
+    - "Row count: monthly data, no gaps"
+    - "Aggregation: T10Y2Y and STLFSI4 are monthly MEAN of source frequency"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# GOLD LAYER (Business-Ready, Regime-Encoded)
+# ═══════════════════════════════════════════════════════════════
+
+gold_schema:
+  table_name: "regime_states_monthly"
+  frequency: "monthly"
+  
+  columns:
+    date:
+      dtype: "datetime64[ns]"
+      nullable: false
+      unique: true
+      sorted: true
+      
+    # Individual regime states (fine-grained)
+    UNRATE_STATE:
+      dtype: "category"
+      categories: ["LOW", "MEDIUM", "HIGH"]
+      nullable: false
+      
+    FEDFUNDS_STATE:
+      dtype: "category"
+      categories: ["ACCOMMODATIVE", "NEUTRAL", "TIGHT"]
+      nullable: false
+      
+    CPI_YOY_STATE:
+      dtype: "category"
+      categories: ["LOW", "MODERATE", "HIGH"]
+      nullable: false
+      
+    T10Y2Y_STATE:
+      dtype: "category"
+      categories: ["NORMAL", "FLAT", "INVERTED"]
+      nullable: false
+      
+    STLFSI4_STATE:
+      dtype: "category"
+      categories: ["CALM", "NEUTRAL", "STRESS"]
+      nullable: false
+      
+    # Composite regime state (collapsed)
+    REGIME_RISK:
+      dtype: "category"
+      categories: ["LOW_RISK", "MODERATE_RISK", "HIGH_RISK"]
+      nullable: false
+      description: "Aggregated risk regime from all components"
+      
+    # Raw values for reference
+    UNRATE:
+      dtype: "float64"
+      nullable: false
+      
+    CPI_YOY:
+      dtype: "float64"
+      nullable: false
+      
+    FEDFUNDS:
+      dtype: "float64"
+      nullable: false
+      
+    T10Y2Y:
+      dtype: "float64"
+      nullable: false
+      
+    STLFSI4:
+      dtype: "float64"
+      nullable: false
+      
+  rules:
+    - "All state columns must be non-null"
+    - "REGIME_RISK encoding: HIGH_RISK if any component signals risk"
+    - "Row count matches silver layer (monthly alignment)"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# FREQUENCY HANDLING & AGGREGATION RULES
+# ═══════════════════════════════════════════════════════════════
+
+frequency_alignment:
+  # All series must be aligned to monthly frequency
+  target_frequency: "monthly"
+  
+  aggregation_rules:
+    daily_to_monthly: "mean"  # T10Y2Y: daily → monthly MEAN
+    weekly_to_monthly: "mean"  # STLFSI4: weekly → monthly MEAN
+    monthly_to_monthly: "keep"  # UNRATE, FEDFUNDS, CPIAUCSL: keep as-is
+    
+  resampling_params:
+    method: "resample"  # Pandas resample
+    frequency: "MS"  # Month start
+    how: "mean"  # Aggregate by mean
+    
+  date_alignment:
+    - "Use first day of month for all dates (YYYY-MM-01)"
+    - "Ensure no gaps in monthly sequence"
+    - "Forward-fill only for missing values, not forward-projection"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# MISSING VALUE STRATEGY
+# ═══════════════════════════════════════════════════════════════
+
+missing_value_handling:
+  strategy: "forward_fill_then_drop"
+  
+  forward_fill:
+    - "Apply within each series independently"
+    - "Max forward fill: 1 month (don't interpolate across large gaps)"
+    
+  dropping:
+    - "If >2 out of 5 variables missing in a row, drop that month"
+    - "Ensures sufficient data density for Markov modeling"
+    
+  bronze_level:
+    - "Note missing values but do NOT fill"
+    - "Log frequency of nulls"
+    
+  silver_level:
+    - "Forward fill sparse series (T10Y2Y, STLFSI4)"
+    - "Drop rows with >2 missing after fill"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# OUTLIER DETECTION & HANDLING
+# ═══════════════════════════════════════════════════════════════
+
+outlier_handling:
+  method: "domain_aware_winsorization"
+  
+  UNRATE:
+    min_valid: 0.0
+    max_valid: 15.0
+    action: "flag_and_log"
+    
+  FEDFUNDS:
+    min_valid: 0.0
+    max_valid: 20.0
+    action: "flag_and_log"
+    
+  CPIAUCSL:
+    min_valid: 20.0
+    max_valid: 400.0
+    action: "flag_and_log"
+    
+  T10Y2Y:
+    min_valid: -2.0
+    max_valid: 3.0
+    action: "flag_and_log"
+    
+  STLFSI4:
+    min_valid: -2.0
+    max_valid: 5.0
+    action: "flag_and_log"
+    
+  CPI_YOY:
+    min_valid: -5.0
+    max_valid: 20.0
+    action: "flag_and_log"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# QUALITY METRICS (What Gets Logged)
+# ═══════════════════════════════════════════════════════════════
+
+quality_metrics:
+  - "% null per series"
+  - "Date range coverage"
+  - "Outliers detected & counts"
+  - "Rows dropped / retained"
+  - "Data freshness (latest date)"
+  - "Schema compliance %"

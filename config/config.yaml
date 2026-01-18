@@ -1,0 +1,120 @@
+# Financial Risk Markov Chains - Configuration
+
+# Data Layer Configuration
+data:
+  bronze:
+    path: "./data/bronze"
+    format: "csv"
+    fred_api_key: "${FRED_API_KEY}"
+    indicators:
+      - "DFF"      # Federal Funds Rate
+      - "T10Y2Y"   # 10Y-2Y Yield Curve Spread
+      - "UNRATE"   # Unemployment Rate
+      - "CPIAUCSL" # CPI All Urban Consumers
+      - "VIXCLS"   # VIX Volatility Index
+  
+  silver:
+    path: "./data/silver"
+    format: "parquet"
+    compression: "snappy"
+  
+  gold:
+    path: "./data/gold"
+    format: "parquet"
+    compression: "snappy"
+
+# Regime Definition & State Encoding
+regimes:
+  yield_curve:
+    states: ["Inverted", "Flat", "Normal"]
+    thresholds: [-0.01, 0.0, 0.75, 10.0]  # Basis points
+    
+  federal_funds_rate:
+    states: ["Low", "Medium", "High"]
+    thresholds: [0.0, 2.0, 4.0, 10.0]
+    
+  unemployment:
+    states: ["Low", "Moderate", "High"]
+    thresholds: [0.0, 4.5, 6.0, 15.0]
+    
+  inflation:
+    states: ["Stable", "Rising", "High"]
+    thresholds: [0.0, 2.0, 3.5, 10.0]
+    
+  volatility:
+    states: ["Calm", "Elevated", "Crisis"]
+    thresholds: [0.0, 15.0, 25.0, 100.0]
+
+# Markov Chain Configuration
+markov:
+  model_type: "first_order_homogeneous"
+  order: 1
+  window_size: 60  # months
+  rolling_window: 24  # months for rolling estimation
+  min_transitions: 5  # minimum for transition estimation
+  laplace_smoothing: 0.1
+
+# Model Evaluation
+evaluation:
+  backtest_window: 24  # months
+  train_test_split: 0.8
+  metrics:
+    - "log_likelihood"
+    - "regime_persistence"
+    - "absorbing_state_time"
+    - "prediction_accuracy"
+
+# Monitoring & Drift Detection
+monitoring:
+  drift_detection:
+    enabled: true
+    method: "frobenius_norm"  # or "kl_divergence"
+    threshold: 0.05
+    window_comparison: 12  # months
+    
+  performance_tracking:
+    enabled: true
+    metrics_interval: 7  # days
+    
+  alerts:
+    enabled: true
+    channels: ["email", "slack"]
+    
+# Model Registry & MLflow
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  artifact_location: "./mlruns"
+  experiment_name: "financial-risk-markov"
+  
+# Retraining Policy
+retraining:
+  trigger_on_drift: true
+  trigger_on_schedule: true
+  schedule: "0 0 * * 0"  # Weekly Sunday 00:00
+  promotion_strategy: "best_metric"
+  min_improvement: 0.02
+  rollback_enabled: true
+
+# FastAPI Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  log_level: "INFO"
+  max_workers: 4
+  
+# Streamlit Dashboard
+dashboard:
+  page_title: "Financial Risk Regime Prediction"
+  layout: "wide"
+  initial_sidebar_state: "expanded"
+  theme: "light"
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers: ["console", "file"]
+  log_file: "./logs/app.log"
+  max_file_size: 10485760  # 10MB
+  backup_count: 5

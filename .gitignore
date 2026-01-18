@@ -1,0 +1,141 @@
+# .gitignore for Financial Risk Markov MLOps Project
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+START_HERE.md
+QUICK_REFERENCE.md
+LINKEDIN_VIDEO_WALKTHROUGH.md
+FINAL_STATUS.md
+CHANGES_SUMMARY.md
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Data (keep structure, ignore large files)
+data/bronze/*.csv
+data/silver/*.parquet
+data/gold/*.parquet
+*.pkl
+*.pickle
+
+# Model artifacts
+models/checkpoints/
+mlruns/
+*.joblib
+*.h5
+*.pth
+
+# Logs
+logs/
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# MLflow
+mlflow.db
+.mlflow/
+model_registry/artifacts
+model_registry/db_backend
+model_registry/mlflow_backend
+mlflow_artifacts/
+
+# Config overrides
+config/local_config.yaml
+
+# Output
+output/
+
+# System
+.DS_Store
+Thumbs.db
+
+# LLM-Generated Documentation & Auto-Generated Files
+# Phase 1 Planning Documents
+PHASE_1_ARCHITECTURE.md
+PHASE_1_COMPLETE_INDEX.md
+PHASE_1_DELIVERABLES.md
+PHASE_1_EXECUTIVE_SUMMARY.md
+PHASE_1_IMPLEMENTATION_GUIDE.md
+PHASE_1_QUICK_START.md
+PHASE_1_STATUS_REPORT.md
+GITHUB_PREP_SUMMARY.md
+# Model Improvement Plans
+documentation/MODEL_V2_IMPROVEMENT_PLAN.md
+
+Error_docs/
+
+# Auto-generated validation scripts
+validation_phase1.py
+validation_report.py
+validation_report.json
+
+# Auto-generated documentation
+documentation/DOCUMENTATION_*.md
+documentation/COMPLETION_*.md
+documentation/BUILD_SUMMARY.md
+documentation/FIXES_AND_ENHANCEMENTS.md
+documentation/FUTURE_SCOPE_AND_IMPROVEMENTS.md
+documentation/QUICK_*.md
+documentation/README_DOCUMENTATION_PAGE.md
+documentation/READY_TO_TEST.md
+documentation/FILE_CREATION_PLAN.md
+documentation/PROJECT_*.md
+
+# API/Serving
+__pycache__/
+.hypercorn.pid
+phase_documentation/
+
+# Docker
+.dockerignore
+
+COMPLETION_REPORT.md
+DELIVERABLES_FINAL.md
+FINAL_DOCUMENTATION_SUMMARY.md
+# Ignore MLflow tracking data
+model_registry/
+mlruns/
+outputs/
+
+# Ignore OS specific files
+.DS_Store
+Thumbs.db

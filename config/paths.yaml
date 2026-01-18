@@ -1,0 +1,34 @@
+# System Paths Configuration
+
+paths:
+  data:
+    root: "./data"
+    bronze: "./data/bronze"
+    silver: "./data/silver"
+    gold: "./data/gold"
+    raw_indicators: "./data/bronze/raw_indicators.csv"
+    cleaned_data: "./data/silver/cleaned_macro_data.parquet"
+    encoded_states: "./data/silver/state_encoded_data.parquet"
+    state_sequences: "./data/gold/markov_state_sequences.parquet"
+    
+  models:
+    root: "./models"
+    mlflow_artifacts: "./mlruns"
+    local_models: "./models/checkpoints"
+    
+  output:
+    root: "./output"
+    results: "./output/results"
+    reports: "./output/reports"
+    
+  logs:
+    root: "./logs"
+    app: "./logs/app.log"
+    training: "./logs/training.log"
+    
+  config:
+    root: "./config"
+    main: "./config/config.yaml"
+    paths: "./config/paths.yaml"
+    thresholds: "./config/thresholds.yaml"
+    model_params: "./config/model_params.yaml"

@@ -1,0 +1,81 @@
+{
+  "model_training": {
+    "timestamp": "2026-01-17T14:03:14.347247",
+    "data_path": "data\\gold\\markov_state_sequences.parquet",
+    "total_records": 859,
+    "regime_records": 859,
+    "date_range": {
+      "start": "1954-07-01 00:00:00",
+      "end": "2026-01-01 00:00:00"
+    }
+  },
+  "model_metrics": {
+    "n_states": 3,
+    "states": [
+      "HIGH_RISK",
+      "LOW_RISK",
+      "MODERATE_RISK"
+    ],
+    "log_likelihood": -0.23877608562340952,
+    "stationary_dist": [
+      0.44289044289044377,
+      0.003496503496503556,
+      0.5536130536130528
+    ]
+  },
+  "transition_matrix": {
+    "states": [
+      "HIGH_RISK",
+      "LOW_RISK",
+      "MODERATE_RISK"
+    ],
+    "matrix": [
+      [
+        0.9342105263157895,
+        0.0,
+        0.06578947368421052
+      ],
+      [
+        0.0,
+        0.3333333333333333,
+        0.6666666666666666
+      ],
+      [
+        0.05263157894736842,
+        0.004210526315789474,
+        0.9431578947368421
+      ]
+    ]
+  },
+  "regime_distribution": {
+    "HIGH_RISK": 380,
+    "LOW_RISK": 3,
+    "MODERATE_RISK": 476
+  },
+  "economic_indicators": {
+    "UNRATE": {
+      "mean": 5.80081490104773,
+      "std": 1.6687828393769948,
+      "min": 3.4,
+      "max": 14.8
+    },
+    "FEDFUNDS": {
+      "mean": 4.602770663562282,
+      "std": 3.540975364725175,
+      "min": 0.05,
+      "max": 19.1
+    },
+    "CPI_YOY": {
+      "mean": 3.624781067517454,
+      "std": 2.7531757103149532,
+      "min": -1.9587610037622771,
+      "max": 14.592274678111572
+    },
+    "T10Y2Y": {
+      "mean": 0.17607582261556828,
+      "std": 0.6706275180201582,
+      "min": -0.9289999999999999,
+      "max": 1.471818181818182
+    }
+  }
+}

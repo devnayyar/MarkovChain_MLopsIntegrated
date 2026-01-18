@@ -1,0 +1,276 @@
+# Regime Discretization Thresholds
+# These thresholds convert continuous variables into discrete economic regimes
+# All thresholds are domain-driven (not statistical quantiles)
+
+---
+# ═══════════════════════════════════════════════════════════════
+# INDIVIDUAL VARIABLE STATE DEFINITIONS
+# ═══════════════════════════════════════════════════════════════
+
+unemployment_rate:
+  variable: "UNRATE"
+  description: "Labor Market Condition"
+  unit: "percent"
+  states:
+    LOW:
+      range: [0.0, 4.0)
+      interpretation: "Strong labor market, low unemployment stress"
+      business_meaning: "Economic expansion"
+      
+    MEDIUM:
+      range: [4.0, 6.0)
+      interpretation: "Moderate labor market, elevated unemployment"
+      business_meaning: "Economic softening or stabilization"
+      
+    HIGH:
+      range: [6.0, 15.0]
+      interpretation: "High unemployment, labor market distress"
+      business_meaning: "Recession risk or ongoing crisis"
+
+federal_funds_rate:
+  variable: "FEDFUNDS"
+  description: "Monetary Policy Stance"
+  unit: "percent per annum"
+  states:
+    ACCOMMODATIVE:
+      range: [0.0, 2.0)
+      interpretation: "Very loose monetary policy, low rates"
+      business_meaning: "Crisis mode or stimulus"
+      fed_action: "Fighting deflation/recession"
+      
+    NEUTRAL:
+      range: [2.0, 4.0)
+      interpretation: "Neutral policy, mid-range rates"
+      business_meaning: "Normal expansion"
+      fed_action: "Balanced approach"
+      
+    TIGHT:
+      range: [4.0, 20.0]
+      interpretation: "Restrictive monetary policy, high rates"
+      business_meaning: "Fighting inflation"
+      fed_action: "Tightening cycle"
+
+inflation_yoy:
+  variable: "CPI_YOY"
+  description: "Year-over-Year Inflation Rate"
+  unit: "percent change"
+  note: "Derived from CPIAUCSL, not directly from FRED"
+  states:
+    LOW:
+      range: [-5.0, 2.0)
+      interpretation: "Below target inflation or deflation"
+      business_meaning: "Low inflation pressure"
+      fed_reaction: "Accommodative"
+      
+    MODERATE:
+      range: [2.0, 4.0)
+      interpretation: "Target inflation zone (Fed's 2% long-run target)"
+      business_meaning: "Stable pricing environment"
+      fed_reaction: "Neutral"
+      
+    HIGH:
+      range: [4.0, 20.0]
+      interpretation: "Elevated inflation above target"
+      business_meaning: "Inflation pressure building"
+      fed_reaction: "Will tighten"
+
+yield_curve_spread:
+  variable: "T10Y2Y"
+  description: "10-Year minus 2-Year Treasury Spread"
+  unit: "percentage points"
+  thresholds_note: "Recession leading indicator; inversion predicts slowdown"
+  states:
+    NORMAL:
+      range: (0.50, 5.0]
+      interpretation: "Normal upward sloping curve"
+      business_meaning: "No recession signal, growth expectations"
+      recession_risk: "Low"
+      
+    FLAT:
+      range: [0.0, 0.50]
+      interpretation: "Flattened curve, limited premium for duration"
+      business_meaning: "Economic uncertainty, policy uncertainty"
+      recession_risk: "Elevated"
+      
+    INVERTED:
+      range: [-2.0, 0.0)
+      interpretation: "Inverted curve, shorter rates > longer rates"
+      business_meaning: "Strong recession signal (historically 90% accurate)"
+      recession_risk: "Very High"
+      historical_note: "Every recession since 1970s preceded by inversion"
+
+financial_stress_index:
+  variable: "STLFSI4"
+  description: "St. Louis Fed Financial Stress Index"
+  unit: "standard deviations from mean"
+  note: "Zero = historical mean; positive = stress; negative = calm"
+  states:
+    CALM:
+      range: [-3.0, -0.5)
+      interpretation: "Below-average financial stress, benign conditions"
+      business_meaning: "Financial system stable, credit flowing freely"
+      credit_conditions: "Easy"
+      
+    NEUTRAL:
+      range: [-0.5, 0.5]
+      interpretation: "Average financial stress levels"
+      business_meaning: "Normal market functioning"
+      credit_conditions: "Normal"
+      
+    STRESS:
+      range: (0.5, 5.0]
+      interpretation: "Elevated financial stress"
+      business_meaning: "Systemic risk rising, credit tightening"
+      credit_conditions: "Tight"
+      historical_note: ">1.5 during 2008 crisis, 2020 COVID shock, etc"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# COMPOSITE REGIME CLASSIFICATION (Risk-Weighted)
+# ═══════════════════════════════════════════════════════════════
+
+composite_regime:
+  description: |
+    Maps 5-dimensional state space (3^5 = 243 states) into 3 risk buckets.
+    This is the PRIMARY state space for the Markov chain.
+  
+  HIGH_RISK:
+    triggers:
+      - "UNRATE_STATE = HIGH"  # Labor crisis
+      - "OR T10Y2Y_STATE = INVERTED"  # Recession signal
+      - "OR STLFSI4_STATE = STRESS"  # Systemic risk
+    interpretation: "One or more critical stress indicators activated"
+    business_meaning: "Elevated recession/default risk"
+    example_scenarios:
+      - "High unemployment + high inflation (stagflation)"
+      - "Inverted yield curve (pre-recession)"
+      - "Financial stress index spike (crisis)"
+    
+    risk_escalation_probability: 0.40
+    note: "If in HIGH_RISK, probability of staying or going higher is significant"
+    
+  MODERATE_RISK:
+    triggers:
+      - "NOT(any HIGH_RISK trigger)"
+      - "AND NOT(all LOW_RISK)"
+    interpretation: "Mixed signals or elevated single-dimension risk"
+    business_meaning: "Normal economic uncertainty"
+    example_scenarios:
+      - "FEDFUNDS = TIGHT but UNRATE = LOW (no labor crisis yet)"
+      - "Mild financial stress but flattened curve (warning)"
+    
+    risk_escalation_probability: 0.10
+    note: "Transition state, could improve or deteriorate"
+    
+  LOW_RISK:
+    triggers:
+      - "UNRATE_STATE = LOW (strong labor)"
+      - "AND STLFSI4_STATE = CALM (stable financials)"
+      - "AND CPI_YOY_STATE = MODERATE (controlled inflation)"
+    interpretation: "All key indicators benign"
+    business_meaning: "Economic expansion, low stress"
+    example_scenarios:
+      - "Strong employment + low financial stress + moderate inflation"
+      - "Goldilocks economy (2017-2019)"
+    
+    risk_escalation_probability: 0.02
+    note: "Stable state, but can transition if external shock occurs"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# VALIDATION RULES (Sanity Checks on Thresholds)
+# ═══════════════════════════════════════════════════════════════
+
+validation:
+  thresholds_are_mutually_exclusive: true
+  ranges_are_exhaustive: "(-∞, +∞) covered"
+  no_overlapping_states: true
+  
+  state_counts:
+    unemployment: 3
+    federal_funds: 3
+    inflation: 3
+    yield_curve: 3
+    financial_stress: 3
+    composite_risk: 3
+  
+  monotonicity:
+    - "Higher UNRATE → worse labor state"
+    - "Higher FEDFUNDS → tighter policy"
+    - "Higher CPI_YOY → more inflation"
+    - "Lower T10Y2Y → closer to inversion/recession"
+    - "Higher STLFSI4 → more stress"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# INTERPRETATION GUIDE (For Reports & Dashboards)
+# ═══════════════════════════════════════════════════════════════
+
+state_interpretation_map:
+  state: "UNRATE_STATE, FEDFUNDS_STATE, CPI_YOY_STATE, T10Y2Y_STATE, STLFSI4_STATE"
+  
+  examples:
+    - state: "(LOW, ACCOMMODATIVE, MODERATE, NORMAL, CALM)"
+      regime: "LOW_RISK"
+      narrative: "Strong employment, loose policy, stable inflation, normal curve, calm markets"
+      
+    - state: "(MEDIUM, NEUTRAL, HIGH, FLAT, NEUTRAL)"
+      regime: "MODERATE_RISK"
+      narrative: "Softening labor market, neutral policy, high inflation, flattened curve"
+      
+    - state: "(HIGH, TIGHT, HIGH, INVERTED, STRESS)"
+      regime: "HIGH_RISK"
+      narrative: "Recession conditions: high unemployment, restrictive policy, high inflation, inverted curve, financial stress"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# PARAMETER NOTES FOR IMPLEMENTATION
+# ═══════════════════════════════════════════════════════════════
+
+implementation_notes:
+  - "All thresholds in config/regime_thresholds.yaml"
+  - "Loaded by preprocessing/regime_discretization.py"
+  - "Applied in feature engineering pipeline"
+  - "Can be tuned via sensitivity analysis"
+  - "Business team should validate thresholds quarterly"
+
+sensitivity_analysis:
+  recommendation: "Test threshold variations ±0.25% impact"
+  goal: "Ensure regime definitions robust to small changes"
+  phase: "modeling/experiments/threshold_sensitivity.py"
+
+---
+# ═══════════════════════════════════════════════════════════════
+# HISTORICAL REGIME EXAMPLES (Reference)
+# ═══════════════════════════════════════════════════════════════
+
+historical_regimes:
+  2008_financial_crisis:
+    date_range: "2008-Q3 to 2009-Q1"
+    regime: "HIGH_RISK"
+    indicators:
+      UNRATE: "HIGH (peaked 10%)"
+      FEDFUNDS: "ACCOMMODATIVE (near 0)"
+      CPI_YOY: "MODERATE/HIGH (volatile)"
+      T10Y2Y: "FLAT (near 1%)"
+      STLFSI4: "STRESS (>2.5)"
+    
+  2020_covid_shock:
+    date_range: "2020-Q1 to 2020-Q2"
+    regime: "HIGH_RISK"
+    indicators:
+      UNRATE: "HIGH (14% spike)"
+      FEDFUNDS: "ACCOMMODATIVE (0.25%)"
+      CPI_YOY: "LOW (deflation fears)"
+      T10Y2Y: "NORMAL"
+      STLFSI4: "STRESS (4.0+ spike)"
+    
+  2017_2019_expansion:
+    date_range: "2017 to 2019"
+    regime: "LOW_RISK"
+    indicators:
+      UNRATE: "LOW (3.5%)"
+      FEDFUNDS: "TIGHT (moving to 2.5%)"
+      CPI_YOY: "MODERATE (1.5-2.5%)"
+      T10Y2Y: "NORMAL (2.5%)"
+      STLFSI4: "CALM (< -0.5)"

@@ -1,0 +1,70 @@
+# Model Parameter Configuration
+
+markov_models:
+  base_markov:
+    name: "Base First-Order Markov Chain"
+    order: 1
+    time_homogeneous: true
+    laplace_smoothing: 0.1
+    min_samples_per_state: 5
+    
+  absorbing_markov:
+    name: "Absorbing Markov Chain"
+    order: 1
+    absorbing_states: ["Default", "Crisis"]
+    time_homogeneous: true
+    
+  rolling_window_markov:
+    name: "Rolling Window Markov Chain (Non-Stationary)"
+    order: 1
+    window_size: 24  # months
+    overlap: 0.5
+    
+  hybrid_markov:
+    name: "Hybrid Markov Chain"
+    order: 1
+    ensemble_method: "weighted_average"
+    weights: [0.3, 0.3, 0.4]  # base, absorbing, rolling
+
+# Threshold Configuration for State Transitions
+state_thresholds:
+  yield_curve_spread:
+    normal_threshold: 0.75  # basis points
+    flat_threshold: 0.0
+    
+  federal_funds_rate:
+    low_threshold: 2.0  # percent
+    medium_threshold: 4.0
+    
+  unemployment_rate:
+    low_threshold: 4.5  # percent
+    moderate_threshold: 6.0
+    
+  inflation_rate:
+    stable_threshold: 2.0  # percent
+    rising_threshold: 3.5
+    
+  vix_volatility:
+    calm_threshold: 15.0
+    elevated_threshold: 25.0
+
+# Drift Detection Thresholds
+drift_thresholds:
+  frobenius_norm:
+    warning_level: 0.03
+    alert_level: 0.05
+    
+  kl_divergence:
+    warning_level: 0.02
+    alert_level: 0.05
+    
+  state_distribution_shift:
+    warning_level: 0.10
+    alert_level: 0.20
+
+# Retraining Triggers
+retraining_triggers:
+  drift_threshold: 0.05
+  performance_degradation: 0.02
+  schedule_weekly: true
+  min_data_points: 60

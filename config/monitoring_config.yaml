@@ -1,0 +1,128 @@
+# Monitoring Configuration
+
+# Scheduled Jobs
+scheduled_jobs:
+  drift_check:
+    enabled: true
+    interval_days: 7
+    reference_window_months: 12
+    current_window_months: 3
+    threshold: 0.1
+  
+  performance_check:
+    enabled: true
+    interval_days: 1
+    trend_window_size: 5
+    degradation_threshold: 0.05
+  
+  anomaly_detection:
+    enabled: true
+    interval_hours: 6
+    z_threshold: 3.0
+    iqr_multiplier: 1.5
+
+# Alert Configuration
+alerts:
+  severity_levels:
+    INFO: "Informational alert"
+    WARNING: "Warning requiring attention"
+    CRITICAL: "Critical alert requiring immediate action"
+  
+  escalation:
+    INFO:
+      threshold: 3
+      next_level: "WARNING"
+      action: "notify_team"
+    WARNING:
+      threshold: 2
+      next_level: "CRITICAL"
+      action: "alert_ops"
+    CRITICAL:
+      threshold: 1
+      next_level: "PAGE_ONCALL"
+      action: "page_oncall"
+  
+  retention_days: 90
+
+# Drift Detection
+drift_detection:
+  method: "jensen_shannon"
+  regime_distribution:
+    enabled: true
+    threshold: 0.1
+  transition_matrix:
+    enabled: true
+    threshold: 0.15
+  reference_window_months: 12
+  current_window_months: 3
+
+# Performance Monitoring
+performance_monitoring:
+  metrics_to_track:
+    - accuracy
+    - precision
+    - recall
+    - regime_count
+    - data_quality
+  
+  degradation_detection:
+    enabled: true
+    threshold: 0.05
+    lookback_periods: 10
+  
+  trend_analysis:
+    window_size: 5
+    methods:
+      - rolling_mean
+      - rolling_std
+      - trend_direction
+
+# Anomaly Detection
+anomaly_detection:
+  z_score:
+    enabled: true
+    threshold: 3.0
+  
+  iqr:
+    enabled: true
+    multiplier: 1.5
+  
+  trend:
+    enabled: true
+    window: 5
+    threshold: 3.0
+
+# Storage
+storage:
+  alerts_path: "model_registry/alerts.jsonl"
+  metrics_path: "model_registry/performance_metrics.jsonl"
+  anomalies_path: "model_registry/anomalies.jsonl"
+  degradation_events_path: "model_registry/degradation_events.jsonl"
+  job_history_path: "model_registry/job_history.jsonl"
+  
+  # Retention policies
+  retention:
+    alerts_days: 90
+    metrics_days: 180
+    anomalies_days: 60
+    job_history_days: 30
+
+# Notifications
+notifications:
+  enabled: true
+  methods:
+    - log
+    # - email  (future)
+    # - slack  (future)
+    # - pagerduty  (future)
+  
+  log:
+    level: "INFO"
+    format: "json"
+
+# Dashboard Configuration
+dashboard:
+  refresh_interval_seconds: 60
+  metrics_display_window: 30
+  alerts_display_count: 20
+  show_historical_trends: true
